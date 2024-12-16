@@ -1,50 +1,58 @@
-import java.awt.event.ActionEvent;
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.Timer;
 
 public class Hop {
-    private static final int WIDTH = 400;
-    private static final int HEIGHT = 800;
-    private static final int DELAY = 40;
-
-    private final JFrame frame;
-    private final Field field;
-    private final Axel axel;
-    private Timer timer;
-    private final GamePanel gamePanel;
+    private Timer timer; // Enlever final
+    private boolean gameStarted = false; // État du jeu : faux au début
 
     public Hop() {
-        this.field = new Field(WIDTH, HEIGHT);
-        this.axel = new Axel(field, WIDTH / 2, field.START_ALTITUDE);
-        this.gamePanel = new GamePanel(field, axel);
+        Field field = new Field(400, 600);
 
-        this.frame = new JFrame("Hop!");
+        if (field.getBlocks().isEmpty()) {
+            System.err.println("Erreur : Aucun bloc généré !");
+            System.exit(1);
+        }
+
+        Block firstBlock = field.getBlocks().get(0);
+        Axel axel = new Axel(field, firstBlock.getX() + firstBlock.getWidth() / 2,
+                             firstBlock.getY() - GamePanel.getAxelHeight());
+        GamePanel gamePanel = new GamePanel(field, axel);
+
+        JFrame frame = new JFrame("Hop!");
         frame.add(gamePanel);
+        frame.setResizable(false);
         frame.pack();
-        frame.setVisible(true);
+        frame.setSize(field.getWidth(), field.getHeight());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    }
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
 
-    public void round() {
-        axel.update();
-        field.update();
-        gamePanel.updateScore();
-        frame.repaint();
-    }
+        timer = new Timer(30, e -> {
+            // Vérifier si Axel a quitté le premier bloc
+            if (!gameStarted) {
+                if (axel.getY() < firstBlock.getY() - GamePanel.getAxelHeight()) {
+                    gameStarted = true; // Le jeu démarre quand Axel quitte le premier bloc
+                }
+            } else {
+                // Jeu en cours : faire défiler les blocs et vérifier la condition Game Over
+                if (!axel.isAlive()) {
+                    timer.stop();
+                    JOptionPane.showMessageDialog(frame, "Game Over ! "+"Votre score est de : "+field.getScore(), "Fin de la partie",  JOptionPane.INFORMATION_MESSAGE);
+                    System.exit(0);
+                }
+                field.update(); // Faire défiler les blocs seulement si le jeu a commencé
+            }
+        
+            axel.update(field); // Axel peut toujours se déplacer
+            gamePanel.repaint(); // Toujours redessiner
+        });
+        
 
-    public boolean over() {
-        return axel.getY() <= field.START_ALTITUDE; // Fin si Axel touche la lave
+        timer.start();
     }
 
     public static void main(String[] args) {
-        Hop game = new Hop();
-
-        game.timer = new Timer(DELAY, (ActionEvent e) -> {
-            game.round();
-            if (game.over()) {
-                game.timer.stop();
-                game.frame.remove(game.gamePanel);
-            }
-        });
-        game.timer.start();
+        new Hop();
     }
 }

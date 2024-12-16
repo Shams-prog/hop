@@ -1,75 +1,86 @@
-import java.util.ArrayList;
-
 public class Axel {
-    public static final double MAX_FALL_SPEED = -20;
-    public static final double JUMP_SPEED = 20;
-    public static final double GRAVITY = 1;
-    public static final double DIVE_SPEED = 3 * GRAVITY;
-    public static final double LATERAL_SPEED = 8;
-
     private int x, y;
-    private double dx, dy;
-    private boolean falling, jumping, diving;
-    private boolean left, right;
     private final Field field;
+    private boolean surviving;
 
-    public static final int AXEL_WIDTH = 20;  // Largeur du personnage
-    public static final int AXEL_HEIGHT = 20; // Hauteur du personnage
+    private boolean left, right, jumping;
+    
+    
+    private static final int LATERAL_SPEED = 8;
 
-    public Axel(Field f, int x, int y) {
-        this.field = f;
+    private int velocityY; // Vitesse verticale
+    private static final int JUMP_SPEED = -20; // Vitesse initiale du saut (vers le haut)
+    private static final int GRAVITY = 1;      // Gravité appliquée en continu
+    private static final int MAX_FALL_SPEED = 15; // Vitesse maximale de chute
+
+
+    public Axel(Field field, int x, int y) {
+        this.field = field;
         this.x = x;
         this.y = y;
-        this.dy = 0; // Initialiser dy pour éviter des problèmes au début
-        this.falling = true;
     }
 
-    public void update() {
-        computeMove();
-        checkCollision(field.getBlocksInView());
-    }
+    
 
-    public void computeMove() {
-        // Gestion du mouvement horizontal
-        if (left) dx = -LATERAL_SPEED;
-        else if (right) dx = LATERAL_SPEED;
-        else dx = 0;
-
-        // Gestion du saut
-        if (jumping && dy == 0) {  // Si Axel est au sol et qu'il saute
-            dy = JUMP_SPEED;
-            jumping = false;
-        } else if (dy > MAX_FALL_SPEED) {
-            dy -= GRAVITY;  // Gravité
-        }
-
-        // Gestion de la descente rapide
-        if (diving) {
-            dy -= DIVE_SPEED;
-        }
-
-        // Mise à jour des coordonnées
-        x += dx;
-        y += dy;
-    }
-
-    public void checkCollision(ArrayList<Block> blocks) {
-        for (Block block : blocks) {
-            if (y >= block.getY() && y + dy <= block.getY() &&
-                x + AXEL_WIDTH > block.getX() && x < block.getX() + block.getWidth()) {
-                y = block.getY(); // Place Axel sur le bloc
-                dy = 0; // Arrête le mouvement vertical
-                return;
+    public void update(Field field) {
+        boolean onBlock = false;
+    
+        // Vérifie si Axel est en contact avec un bloc
+        for (int i = 0; i<field.getBlocks().size();i++) {
+            if (field.getBlocks().get(i).collidesWith(x, y + velocityY, GamePanel.getAxelWidth(), GamePanel.getAxelHeight())) {
+                if (y + GamePanel.getAxelHeight() <= field.getBlocks().get(i).getY() + velocityY) {
+                    y = field.getBlocks().get(i).getY() - GamePanel.getAxelHeight();
+                    velocityY = 0;
+                    onBlock = true;
+                    break;
+                }
             }
         }
+    
+        // Applique la gravité si Axel n'est pas sur un bloc
+        if (!onBlock) {
+            velocityY = Math.min(velocityY + GRAVITY, MAX_FALL_SPEED);
+            y += velocityY;
+        }
+    
+        // Déplacement horizontal autorisé tout le temps
+        if (left) x = Math.max(0, x - LATERAL_SPEED);
+        if (right) x = Math.min(field.getWidth() - GamePanel.getAxelWidth(), x + LATERAL_SPEED);
+    
+        // Gérer le saut uniquement si Axel est sur un bloc
+        if (jumping && onBlock) {
+            velocityY = JUMP_SPEED;
+            jumping = false;
+        }
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
-    // Getters et setters
+    public void setMovingLeft(boolean movingLeft) { this.left = movingLeft; }
+    public void setMovingRight(boolean movingRight) { this.right = movingRight; }
+    public void setJumping(boolean jumping) { this.jumping = jumping; }
+
     public int getX() { return x; }
     public int getY() { return y; }
 
-    public void setLeft(boolean left) { this.left = left; }
-    public void setRight(boolean right) { this.right = right; }
-    public void setJumping(boolean jumping) { this.jumping = jumping; }
-    public void setDiving(boolean diving) { this.diving = diving; }
+    public boolean isAlive() {
+        return y <= field.getHeight();
+    }
+    
+
+    public boolean isSurviving() {
+        return surviving;
+    }
 }

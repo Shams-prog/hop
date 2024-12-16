@@ -1,8 +1,14 @@
-import java.util.Random;
 
 public class Block {
-    private final int x, y;
-    private final int width;
+    private int x, y;
+
+    public final int width; // Dimensions of the field
+
+    public static final int ALTITUDE_GAP = 80; // Gap between blocks
+    public static final int START_ALTITUDE = 100; // Le premier bloc commence plus haut
+
+    private static final int MAX_BLOCK_WIDTH = 100;
+    private static final int MIN_BLOCK_WIDTH = 50;
 
     public Block(int x, int y, int width) {
         this.x = x;
@@ -10,14 +16,31 @@ public class Block {
         this.width = width;
     }
 
-    public static Block randomBlock(int altitude, int maxWidth, int maxBlockWidth) {
-        Random random = new Random();
-        int blockWidth = random.nextInt(maxBlockWidth) + maxBlockWidth / 2;
-        int x = random.nextInt(maxWidth - blockWidth);
-        return new Block(x, altitude, blockWidth);
+    public int getX() {
+        return this.x;
     }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getWidth() { return width; }
+    public int setX(int x) {
+        return this.x=x;
+    }
+
+    public int getY() {
+        return this.y;
+    }
+
+    public int getWidth() {
+        return this.width;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public boolean collidesWith(int axelX, int axelY, int axelWidth, int axelHeight) {
+        return axelX < x + width && axelX + axelWidth > x &&
+               axelY < y + Field.getBlockHeight() && axelY + axelHeight > y;
+    }
+
+    
+
 }
